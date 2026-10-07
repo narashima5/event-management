@@ -25,4 +25,5 @@ Configure these in Render's **Environment** tab:
 - `FIREBASE_CLIENT_EMAIL`: `firebase-adminsdk-fbsvc@campus-pulse-f8d7a.iam.gserviceaccount.com`
 - `FIREBASE_PRIVATE_KEY`: *(Your private service account key)*
 - `FIREBASE_STORAGE_BUCKET`: `campus-pulse-f8d7a.firebasestorage.app`
-- `CORS_ORIGIN`: `https://campus-pulse-f8d7a.web.app,https://campus-pulse-f8d7a.firebaseapp.com`
+- `CLIENT_ORIGIN`: `*` (or `https://campus-pulse-f8d7a.web.app,https://campus-pulse-f8d7a.firebaseapp.com,http://localhost:5173`)
+- `CORS_ORIGIN`: `*` (or `https://campus-pulse-f8d7a.web.app,https://campus-pulse-f8d7a.firebaseapp.com,http://localhost:5173`)

@@ -14,6 +14,13 @@ export function errorHandler(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   next: NextFunction
 ): void {
+  // Ensure CORS headers are present even when responding with an error
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+
   // Handle Zod Schema Validation Errors
   if (err instanceof ZodError) {
     const formattedErrors = err.errors.map((e) => ({

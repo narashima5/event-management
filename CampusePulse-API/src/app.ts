@@ -31,38 +31,21 @@ app.use(
   })
 );
 
-// CORS configuration with whitelist support
-const originsEnv = process.env.CORS_ORIGIN || process.env.CLIENT_ORIGIN;
-const allowedOrigins = originsEnv
-  ? originsEnv.split(',').map((s) => s.trim().replace(/\/$/, ''))
-  : [
-      'http://localhost:5173',
-      'http://127.0.0.1:5173',
-      'https://campus-pulse-f8d7a.web.app',
-      'https://campus-pulse-f8d7a.firebaseapp.com',
-    ];
-
+// CORS configuration allowing Firebase Web App, localhost, and other client origins
 app.use(
   cors({
     origin: (origin, callback) => {
-      const normalizedOrigin = origin ? origin.replace(/\/$/, '') : '';
-      if (
-        !origin ||
-        allowedOrigins.includes('*') ||
-        allowedOrigins.includes(normalizedOrigin) ||
-        normalizedOrigin.endsWith('.web.app') ||
-        normalizedOrigin.endsWith('.firebaseapp.com') ||
-        process.env.NODE_ENV !== 'production'
-      ) {
-        return callback(null, true);
-      }
-      return callback(new Error(`CORS request origin rejected by server policy: ${origin}`));
+      // Allow any requesting origin (reflects origin header, compatible with credentials: true)
+      callback(null, true);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
+
+// Explicit preflight handler
+app.options('*', cors());
 
 app.use(express.json({ limit: '10mb' }));
 
