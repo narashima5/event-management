@@ -10,10 +10,13 @@ import { EmptyState } from '../../components/EmptyState';
 import { useToast } from '../../contexts/ToastContext';
 import {
   Calendar,
+  Award,
   MapPin,
   Clock,
   ArrowLeft,
   PlusCircle,
+  Trash2,
+  Sliders,
   Edit2,
   Archive,
   Layers,
@@ -60,6 +63,27 @@ export const AdminEventDetailsPage: React.FC = () => {
     description: '',
   });
   const [savingProgram, setSavingProgram] = useState(false);
+  const [progCriteria, setProgCriteria] = useState<Array<{ id: string; name: string; maxScore: number; weight?: number; description?: string }>>([
+    { id: 'crit_1', name: 'Performance & Execution', maxScore: 50, weight: 1, description: '' },
+    { id: 'crit_2', name: 'Presentation & Style', maxScore: 50, weight: 1, description: '' },
+  ]);
+  const [progCalcMethod, setProgCalcMethod] = useState<'SUM' | 'AVERAGE' | 'WEIGHTED'>('SUM');
+
+  const addProgCriterion = () => {
+    setProgCriteria((prev) => [
+      ...prev,
+      { id: `crit_${Date.now()}`, name: '', maxScore: 25, weight: 1, description: '' }
+    ]);
+  };
+
+  const removeProgCriterion = (idx: number) => {
+    setProgCriteria((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateProgCriterion = (idx: number, updates: any) => {
+    setProgCriteria((prev) => prev.map((c, i) => (i === idx ? { ...c, ...updates } : c)));
+  };
+
 
   const fetchEventData = async () => {
     if (!id) return;
@@ -154,15 +178,12 @@ export const AdminEventDetailsPage: React.FC = () => {
         registrationStart: event.registrationStart,
         registrationEnd: event.registrationEnd,
         scoringConfig: {
-          criteria: [
-            { id: 'crit_1', name: 'Performance & Execution', maxScore: 50, weight: 1 },
-            { id: 'crit_2', name: 'Presentation & Style', maxScore: 50, weight: 1 },
-          ],
-          totalMaxScore: 100,
-          calculationMethod: 'SUM',
+          criteria: progCriteria,
+          totalMaxScore: progCriteria.reduce((sum, c) => sum + (Number(c.maxScore) || 0), 0),
+          calculationMethod: progCalcMethod,
           pointsConfig: { firstPlace: 5, secondPlace: 3, thirdPlace: 1 },
           tieBreakerRule: 'Highest score on first criterion',
-          isJuryScoreVisibleToCoord: false,
+          isJuryScoreVisibleToCoord: true,
         },
         registrationFields: [],
       });
@@ -412,7 +433,7 @@ export const AdminEventDetailsPage: React.FC = () => {
             />
           </div>
 
-          <div className="form-group">
+                    <div className="form-group">
             <label className="form-label">Description</label>
             <textarea
               className="form-control"
@@ -571,6 +592,75 @@ export const AdminEventDetailsPage: React.FC = () => {
                 value={newProgData.date}
                 onChange={(e) => setNewProgData({ ...newProgData, date: e.target.value })}
               />
+            </div>
+          </div>
+
+                    {/* Dynamic Evaluation Criteria Section */}
+          <div style={{ marginTop: '8px', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div>
+                <label className="form-label" style={{ margin: 0, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Award size={16} color="var(--amber)" /> Dynamic Evaluation Criteria ({progCriteria.length})
+                </label>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                  Total: <strong style={{ color: 'var(--amber)' }}>{progCriteria.reduce((sum, c) => sum + (Number(c.maxScore) || 0), 0)} pts</strong>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={addProgCriterion}
+                className="btn btn-secondary btn-sm"
+                style={{ borderColor: 'rgba(245, 158, 11, 0.4)', fontSize: '0.75rem' }}
+              >
+                + Add Criteria
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto', marginBottom: '14px' }}>
+              {progCriteria.map((c, idx) => (
+                <div
+                  key={c.id || idx}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '2fr 1fr auto',
+                    gap: '8px',
+                    alignItems: 'center',
+                    background: 'rgba(255,255,255,0.02)',
+                    padding: '8px 10px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-subtle)',
+                  }}
+                >
+                  <input
+                    type="text"
+                    className="form-control"
+                    required
+                    placeholder="Criterion Name (e.g. Creativity)"
+                    value={c.name}
+                    onChange={(e) => updateProgCriterion(idx, { name: e.target.value })}
+                    style={{ fontSize: '0.8125rem' }}
+                  />
+                  <input
+                    type="number"
+                    className="form-control"
+                    required
+                    min={1}
+                    max={100}
+                    placeholder="Max"
+                    value={c.maxScore}
+                    onChange={(e) => updateProgCriterion(idx, { maxScore: Number(e.target.value) || 0 })}
+                    style={{ fontSize: '0.8125rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeProgCriterion(idx)}
+                    className="btn btn-ghost btn-sm"
+                    style={{ color: 'var(--rose)', padding: '6px' }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
 

@@ -499,14 +499,14 @@ a:hover {
   background: var(--bg-card);
 }
 
-.data-table {
+.data-table, .table-container table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
   font-size: 0.875rem;
 }
 
-.data-table th {
+.data-table th, .table-container table th {
   background: rgba(14, 20, 36, 0.6);
   padding: 14px 20px;
   color: var(--text-muted);
@@ -515,22 +515,22 @@ a:hover {
   white-space: nowrap;
 }
 
-.data-table td {
+.data-table td, .table-container table td {
   padding: 16px 20px;
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-main);
   vertical-align: middle;
 }
 
-.data-table tbody tr {
+.data-table tbody tr, .table-container table tbody tr {
   transition: background-color var(--transition-fast);
 }
 
-.data-table tbody tr:hover {
+.data-table tbody tr:hover, .table-container table tbody tr:hover {
   background-color: rgba(255, 255, 255, 0.03);
 }
 
-.data-table tbody tr:last-child td {
+.data-table tbody tr:last-child td, .table-container table tbody tr:last-child td {
   border-bottom: none;
 }
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../../services/api';
-import { Program, Event, Assignment, User, ProgramStatus } from '../../types';
+import { Program, Event, Assignment, User, ProgramStatus, ScoringCriterion } from '../../types';
 import { Badge } from '../../components/Badge';
 import { Modal } from '../../components/Modal';
 import { SkeletonCard, TableSkeleton } from '../../components/Skeleton';
@@ -21,6 +21,7 @@ import {
   ExternalLink,
   ShieldCheck,
   Trophy,
+  Sliders,
 } from 'lucide-react';
 
 export const AdminProgramDetailsPage: React.FC = () => {
@@ -36,6 +37,56 @@ export const AdminProgramDetailsPage: React.FC = () => {
 
   // Status transition state
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [isCriteriaModalOpen, setIsCriteriaModalOpen] = useState(false);
+  const [editingCriteria, setEditingCriteria] = useState<ScoringCriterion[]>([]);
+  const [editingCalcMethod, setEditingCalcMethod] = useState<'SUM' | 'AVERAGE' | 'WEIGHTED'>('SUM');
+  const [savingCriteria, setSavingCriteria] = useState(false);
+
+  const openCriteriaModal = () => {
+    setEditingCriteria(program?.scoringConfig?.criteria ? [...program.scoringConfig.criteria] : []);
+    setEditingCalcMethod(program?.scoringConfig?.calculationMethod || 'SUM');
+    setIsCriteriaModalOpen(true);
+  };
+
+  const handleAddCriterion = () => {
+    const newId = `crit_${Date.now()}`;
+    setEditingCriteria((prev) => [
+      ...prev,
+      { id: newId, name: '', maxScore: 25, weight: 1, description: '' }
+    ]);
+  };
+
+  const handleRemoveCriterion = (idx: number) => {
+    setEditingCriteria((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleUpdateCriterion = (idx: number, updates: Partial<ScoringCriterion>) => {
+    setEditingCriteria((prev) => prev.map((c, i) => (i === idx ? { ...c, ...updates } : c)));
+  };
+
+  const handleSaveCriteria = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id || !program) return;
+    setSavingCriteria(true);
+    try {
+      const totalMaxScore = editingCriteria.reduce((sum, c) => sum + (Number(c.maxScore) || 0), 0);
+      const updatedScoringConfig = {
+        ...program.scoringConfig,
+        criteria: editingCriteria,
+        totalMaxScore,
+        calculationMethod: editingCalcMethod,
+      };
+      await api.updateProgram(id, { scoringConfig: updatedScoringConfig });
+      setProgram((prev) => (prev ? { ...prev, scoringConfig: updatedScoringConfig } : null));
+      toast.success('Evaluation criteria updated successfully!');
+      setIsCriteriaModalOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save criteria');
+    } finally {
+      setSavingCriteria(false);
+    }
+  };
+
 
   // Assign staff modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -302,9 +353,14 @@ export const AdminProgramDetailsPage: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px' }}>
         {/* Scoring Rubric Card */}
         <div className="card" style={{ padding: '20px' }}>
-          <h3 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Award size={18} color="var(--amber)" /> Scoring Rubric Criteria ({criteria.length})
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <Award size={18} color="var(--amber)" /> Scoring Rubric Criteria ({criteria.length})
+            </h3>
+            <button onClick={openCriteriaModal} className="btn btn-secondary btn-sm" style={{ borderColor: 'rgba(245, 158, 11, 0.4)' }}>
+              <Sliders size={14} color="var(--amber)" /> Manage Criteria
+            </button>
+          </div>
 
           {criteria.length === 0 ? (
             <div style={{ color: 'var(--text-dim)', fontSize: '0.8125rem' }}>No criteria defined.</div>
@@ -419,6 +475,148 @@ export const AdminProgramDetailsPage: React.FC = () => {
             </button>
             <button type="submit" disabled={assigning || !assignUserId} className="btn btn-primary">
               {assigning ? 'Assigning...' : 'Confirm Assignment'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+      {/* Dynamic Criteria Modal */}
+      <Modal
+        isOpen={isCriteriaModalOpen}
+        onClose={() => setIsCriteriaModalOpen(false)}
+        title={`Evaluation Criteria: ${program?.name}`}
+        maxWidth="680px"
+      >
+        <form onSubmit={handleSaveCriteria} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-dim)' }}>
+                Each event can have dynamic custom criteria. Total max score is calculated dynamically.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddCriterion}
+              className="btn btn-primary btn-sm"
+              style={{ background: 'var(--amber)', borderColor: 'var(--amber)', color: '#090a10', fontWeight: 700 }}
+            >
+              <PlusCircle size={14} /> Add Criterion
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+            <div>
+              <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Calculation Method</label>
+              <select
+                className="form-control"
+                style={{ fontSize: '0.8125rem' }}
+                value={editingCalcMethod}
+                onChange={(e) => setEditingCalcMethod(e.target.value as any)}
+              >
+                <option value="SUM">Sum of Criteria Scores</option>
+                <option value="AVERAGE">Average Across Judges</option>
+                <option value="WEIGHTED">Weighted Dimension Average</option>
+              </select>
+            </div>
+            <div>
+              <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Dynamic Total Points</label>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--amber)', lineHeight: '36px' }}>
+                {editingCriteria.reduce((sum, c) => sum + (Number(c.maxScore) || 0), 0)} pts
+              </div>
+            </div>
+          </div>
+
+          {editingCriteria.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 16px', background: 'rgba(255,255,255,0.01)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border-subtle)' }}>
+              <p style={{ color: 'var(--text-dim)', fontSize: '0.875rem', margin: '0 0 12px' }}>
+                No evaluation criteria added for this program yet.
+              </p>
+              <button type="button" onClick={handleAddCriterion} className="btn btn-secondary btn-sm">
+                <PlusCircle size={14} /> Add First Criterion
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '380px', overflowY: 'auto', paddingRight: '4px' }}>
+              {editingCriteria.map((c, idx) => (
+                <div
+                  key={c.id || idx}
+                  style={{
+                    padding: '14px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--radius-md)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                  }}
+                >
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '10px', alignItems: 'center' }}>
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Criterion Name *</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        required
+                        placeholder="e.g. Technical Execution"
+                        value={c.name}
+                        onChange={(e) => handleUpdateCriterion(idx, { name: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Max Score *</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        required
+                        min={1}
+                        max={100}
+                        value={c.maxScore}
+                        onChange={(e) => handleUpdateCriterion(idx, { maxScore: Number(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Weight</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        min={0.1}
+                        step={0.5}
+                        value={c.weight || 1}
+                        onChange={(e) => handleUpdateCriterion(idx, { weight: Number(e.target.value) || 1 })}
+                      />
+                    </div>
+                    <div style={{ alignSelf: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCriterion(idx)}
+                        className="btn btn-ghost btn-sm"
+                        style={{ color: 'var(--rose)', padding: '8px' }}
+                        title="Remove criterion"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Optional evaluation guidelines or description..."
+                      value={c.description || ''}
+                      onChange={(e) => handleUpdateCriterion(idx, { description: e.target.value })}
+                      style={{ fontSize: '0.8125rem' }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
+            <button type="button" onClick={() => setIsCriteriaModalOpen(false)} className="btn btn-secondary">
+              Cancel
+            </button>
+            <button type="submit" disabled={savingCriteria} className="btn btn-primary">
+              {savingCriteria ? 'Saving...' : 'Save Evaluation Criteria'}
             </button>
           </div>
         </form>

@@ -576,7 +576,7 @@ const ParticipantReportPanel: React.FC<{ events: Event[]; programs: Program[] }>
       ) : (
         <div className="glass-card" style={{ overflow: 'hidden' }}>
           <div className="table-container">
-            <table>
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>Reg Number</th>
@@ -770,7 +770,7 @@ const ProgramRegistrationReportPanel: React.FC<{ events: Event[] }> = ({ events 
       ) : (
         <div className="glass-card" style={{ overflow: 'hidden' }}>
           <div className="table-container">
-            <table>
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>Code</th>
@@ -866,7 +866,7 @@ const EventRegistrationReportPanel: React.FC = () => {
       ) : (
         <div className="glass-card" style={{ overflow: 'hidden' }}>
           <div className="table-container">
-            <table>
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>Event Code</th>
@@ -990,7 +990,7 @@ const ProgramWinnersReportPanel: React.FC<{ programs: Program[] }> = ({ programs
       ) : (
         <div className="glass-card" style={{ overflow: 'hidden' }}>
           <div className="table-container">
-            <table>
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>Rank & Medal</th>
@@ -1096,7 +1096,7 @@ const EventWinnersReportPanel: React.FC<{ events: Event[] }> = ({ events }) => {
       ) : (
         <div className="glass-card" style={{ overflow: 'hidden' }}>
           <div className="table-container">
-            <table>
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>Program</th>
@@ -1193,7 +1193,7 @@ const DepartmentLeaderboardReportPanel: React.FC<{ events: Event[] }> = ({ event
       ) : (
         <div className="glass-card" style={{ overflow: 'hidden' }}>
           <div className="table-container">
-            <table>
+            <table className="data-table">
               <thead>
                 <tr>
                   <th style={{ width: '80px' }}>Rank</th>
@@ -1290,7 +1290,7 @@ const OverallLeaderboardReportPanel: React.FC = () => {
               Department Championship Table
             </div>
             <div className="table-container">
-              <table>
+              <table className="data-table">
                 <thead>
                   <tr>
                     <th>Rank</th>
@@ -1407,7 +1407,7 @@ const JuryScoringReportPanel: React.FC<{ programs: Program[] }> = ({ programs })
       ) : (
         <div className="glass-card" style={{ overflow: 'hidden' }}>
           <div className="table-container">
-            <table>
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>Program</th>

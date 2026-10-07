@@ -39,6 +39,7 @@ export const AdminUsersPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    password: '',
     role: 'coordinator' as UserRole,
     department: 'Computer Science',
     phone: '',
@@ -75,7 +76,7 @@ export const AdminUsersPage: React.FC = () => {
       await api.createUser(formData);
       toast.success(`User '${formData.name}' created successfully!`);
       setIsModalOpen(false);
-      setFormData({ name: '', email: '', role: 'coordinator', department: 'Computer Science', phone: '' });
+      setFormData({ name: '', email: '', password: '', role: 'coordinator' as const, department: 'Computer Science', phone: '' });
       fetchUsers();
     } catch (err: any) {
       toast.error(err.message || 'Failed to create user');
@@ -318,6 +319,22 @@ export const AdminUsersPage: React.FC = () => {
               value={formData.email}
               onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
             />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Temporary Password *</label>
+            <input
+              type="password"
+              className="form-control"
+              required
+              minLength={6}
+              placeholder="Minimum 6 characters (e.g. Staff@123456)"
+              value={formData.password}
+              onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+            />
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
+              Used by the user to sign into the system.
+            </span>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>

@@ -225,39 +225,51 @@ export const AdminProgramsPage: React.FC = () => {
     }));
   };
 
-  // Scoring Criteria Builder Handlers
+  // Dynamic Scoring Criteria Builder Handlers
   const addCriterion = () => {
-    const id = `c_${Date.now()}`;
-    setFormData((prev) => ({
-      ...prev,
-      scoringConfig: {
-        ...prev.scoringConfig,
-        criteria: [
-          ...prev.scoringConfig.criteria,
-          { id, name: 'New Criterion', maxScore: 25, weight: 1 },
-        ],
-      },
-    }));
+    const id = `crit_${Date.now()}`;
+    setFormData((prev) => {
+      const nextCrit = [
+        ...prev.scoringConfig.criteria,
+        { id, name: '', maxScore: 25, weight: 1, description: '' },
+      ];
+      return {
+        ...prev,
+        scoringConfig: {
+          ...prev.scoringConfig,
+          criteria: nextCrit,
+          totalMaxScore: nextCrit.reduce((sum, c) => sum + (Number(c.maxScore) || 0), 0),
+        },
+      };
+    });
   };
 
   const removeCriterion = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      scoringConfig: {
-        ...prev.scoringConfig,
-        criteria: prev.scoringConfig.criteria.filter((_, i) => i !== index),
-      },
-    }));
+    setFormData((prev) => {
+      const nextCrit = prev.scoringConfig.criteria.filter((_, i) => i !== index);
+      return {
+        ...prev,
+        scoringConfig: {
+          ...prev.scoringConfig,
+          criteria: nextCrit,
+          totalMaxScore: nextCrit.reduce((sum, c) => sum + (Number(c.maxScore) || 0), 0),
+        },
+      };
+    });
   };
 
   const updateCriterion = (index: number, updates: Partial<ScoringCriterion>) => {
-    setFormData((prev) => ({
-      ...prev,
-      scoringConfig: {
-        ...prev.scoringConfig,
-        criteria: prev.scoringConfig.criteria.map((c, i) => (i === index ? { ...c, ...updates } : c)),
-      },
-    }));
+    setFormData((prev) => {
+      const nextCrit = prev.scoringConfig.criteria.map((c, i) => (i === index ? { ...c, ...updates } : c));
+      return {
+        ...prev,
+        scoringConfig: {
+          ...prev.scoringConfig,
+          criteria: nextCrit,
+          totalMaxScore: nextCrit.reduce((sum, c) => sum + (Number(c.maxScore) || 0), 0),
+        },
+      };
+    });
   };
 
   return (
@@ -652,75 +664,141 @@ export const AdminProgramsPage: React.FC = () => {
           {/* TAB 3: Dynamic Scoring Criteria Builder */}
           {activeTab === 'scoring' && (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                  Define weighted scoring rubrics and maximum points per criterion evaluated by the jury.
-                </p>
-                <button type="button" onClick={addCriterion} className="btn btn-secondary btn-sm">
-                  + Add Criterion
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <h4 style={{ fontSize: '0.9375rem', fontWeight: 700, margin: 0 }}>Dynamic Evaluation Rubric</h4>
+                  <p style={{ color: 'var(--text-dim)', fontSize: '0.8125rem', margin: '2px 0 0' }}>
+                    Each competition can have custom evaluation criteria. Total maximum points are computed dynamically.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addCriterion}
+                  className="btn btn-primary btn-sm"
+                  style={{ background: 'var(--amber)', borderColor: 'var(--amber)', color: '#090a10', fontWeight: 700 }}
+                >
+                  <PlusCircle size={14} /> Add Criterion
                 </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '420px', overflowY: 'auto' }}>
-                {formData.scoringConfig.criteria.map((crit, idx) => (
-                  <div
-                    key={crit.id}
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.03)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '14px',
-                      display: 'grid',
-                      gridTemplateColumns: '2fr 1fr 2fr auto',
-                      gap: '12px',
-                      alignItems: 'center',
-                    }}
+              {/* Scoring Configuration Meta Bar */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', marginBottom: '16px' }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Score Calculation Method</label>
+                  <select
+                    className="form-control"
+                    style={{ fontSize: '0.8125rem' }}
+                    value={formData.scoringConfig.calculationMethod}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        scoringConfig: { ...prev.scoringConfig, calculationMethod: e.target.value as any },
+                      }))
+                    }
                   >
-                    <div>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Criterion Name</span>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={crit.name}
-                        onChange={(e) => updateCriterion(idx, { name: e.target.value })}
-                      />
-                    </div>
+                    <option value="SUM">Sum of Points (Total Score)</option>
+                    <option value="AVERAGE">Average Across Judges</option>
+                    <option value="WEIGHTED">Weighted Dimension Average</option>
+                  </select>
+                </div>
 
-                    <div>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Max Points</span>
-                      <input
-                        type="number"
-                        className="form-input"
-                        min={1}
-                        value={crit.maxScore}
-                        onChange={(e) => updateCriterion(idx, { maxScore: parseInt(e.target.value, 10) || 0 })}
-                      />
-                    </div>
-
-                    <div>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Description</span>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="Evaluation guideline"
-                        value={crit.description || ''}
-                        onChange={(e) => updateCriterion(idx, { description: e.target.value })}
-                      />
-                    </div>
-
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => removeCriterion(idx)}
-                        className="btn btn-ghost btn-sm"
-                        style={{ color: 'var(--rose)', marginTop: '16px' }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Calculated Total Max Points</label>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--amber)', lineHeight: '36px' }}>
+                    {formData.scoringConfig.criteria.reduce((sum, c) => sum + (Number(c.maxScore) || 0), 0)} pts
                   </div>
-                ))}
+                </div>
               </div>
+
+              {formData.scoringConfig.criteria.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '36px 16px', background: 'rgba(255,255,255,0.01)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border-subtle)' }}>
+                  <p style={{ color: 'var(--text-dim)', fontSize: '0.875rem', margin: '0 0 12px' }}>
+                    No evaluation criteria defined yet. Each event has different criteria.
+                  </p>
+                  <button type="button" onClick={addCriterion} className="btn btn-secondary btn-sm">
+                    <PlusCircle size={14} /> Add First Criterion
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '420px', overflowY: 'auto', paddingRight: '4px' }}>
+                  {formData.scoringConfig.criteria.map((crit, idx) => (
+                    <div
+                      key={crit.id}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '10px',
+                      }}
+                    >
+                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '12px', alignItems: 'center' }}>
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Criterion Name *</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            required
+                            placeholder="e.g. Technical Execution"
+                            value={crit.name}
+                            onChange={(e) => updateCriterion(idx, { name: e.target.value })}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Max Score *</label>
+                          <input
+                            type="number"
+                            className="form-control"
+                            required
+                            min={1}
+                            max={100}
+                            value={crit.maxScore}
+                            onChange={(e) => updateCriterion(idx, { maxScore: parseInt(e.target.value, 10) || 0 })}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Weight</label>
+                          <input
+                            type="number"
+                            className="form-control"
+                            min={0.1}
+                            step={0.5}
+                            value={crit.weight || 1}
+                            onChange={(e) => updateCriterion(idx, { weight: parseFloat(e.target.value) || 1 })}
+                          />
+                        </div>
+
+                        <div style={{ alignSelf: 'flex-end' }}>
+                          <button
+                            type="button"
+                            onClick={() => removeCriterion(idx)}
+                            className="btn btn-ghost btn-sm"
+                            style={{ color: 'var(--rose)', padding: '8px' }}
+                            title="Remove criterion"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="Optional evaluation guidelines or description..."
+                          value={crit.description || ''}
+                          onChange={(e) => updateCriterion(idx, { description: e.target.value })}
+                          style={{ fontSize: '0.8125rem' }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
