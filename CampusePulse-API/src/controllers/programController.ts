@@ -260,8 +260,13 @@ export class ProgramController {
         query = query.where('status', '==', req.query.status);
       }
 
-      const snapshot = await query.orderBy('registeredAt', 'asc').get();
+      const snapshot = await query.get();
       const participants = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() }));
+      participants.sort((a: any, b: any) => {
+        const tA = a.registeredAt ? new Date(a.registeredAt).getTime() : 0;
+        const tB = b.registeredAt ? new Date(b.registeredAt).getTime() : 0;
+        return tA - tB;
+      });
 
       res.json({
         success: true,
@@ -346,10 +351,10 @@ export class ProgramController {
       const resultsSnapshot = await db
         .collection('results')
         .where('programId', '==', programId)
-        .orderBy('rank', 'asc')
         .get();
 
       const results = resultsSnapshot.docs.map((d: any) => ({ id: d.id, ...d.data() }));
+      results.sort((a: any, b: any) => (Number(a.rank) || 999) - (Number(b.rank) || 999));
 
       res.json({
         success: true,

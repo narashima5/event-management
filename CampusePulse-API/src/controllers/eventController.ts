@@ -13,11 +13,16 @@ export class EventController {
         query = query.where('status', '==', req.query.status);
       }
 
-      const snapshot = await query.orderBy('createdAt', 'desc').get();
+      const snapshot = await query.get();
       const events = snapshot.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data(),
       }));
+      events.sort((a: any, b: any) => {
+        const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return tB - tA;
+      });
 
       res.json({
         success: true,
