@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth, DEMO_USERS } from '../../contexts/AuthContext';
-import { Sparkles, Shield, Lock, Mail, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { Sparkles, Lock, Mail, ArrowRight, Eye, EyeOff, ShieldCheck, Info } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const { loginWithCredentials, loginWithToken, user, role } = useAuth();
+  const { loginWithCredentials, user, role } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,35 +19,28 @@ export const LoginPage: React.FC = () => {
       if (role === 'admin') navigate('/admin/dashboard');
       else if (role === 'coordinator') navigate('/coordinator/dashboard');
       else if (role === 'jury') navigate('/jury/dashboard');
+      else navigate('/');
     }
   }, [user, role, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !password) return;
 
     setLoading(true);
     setError(null);
     try {
-      await loginWithCredentials(email, password);
-      // navigation handled by useEffect
+      await loginWithCredentials(email.trim(), password);
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please verify credentials.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async (token: string, targetRole: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await loginWithToken(token);
-      if (targetRole === 'admin') navigate('/admin/dashboard');
-      else if (targetRole === 'coordinator') navigate('/coordinator/dashboard');
-      else if (targetRole === 'jury') navigate('/jury/dashboard');
-    } catch (err: any) {
-      setError('Demo login failed');
+      let msg = 'Authentication failed. Please verify your credentials.';
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+        msg = 'Invalid email address or password. Please try again.';
+      } else if (err.code === 'auth/too-many-requests') {
+        msg = 'Too many failed login attempts. Please reset your password or try again later.';
+      } else if (err.message) {
+        msg = err.message;
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -71,30 +65,31 @@ export const LoginPage: React.FC = () => {
           padding: '40px',
           boxShadow: 'var(--shadow-lg)',
           border: '1px solid var(--border-card)',
+          borderRadius: 'var(--radius-xl)',
         }}
       >
-        {/* Brand */}
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+        {/* Brand Header */}
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div
             style={{
-              width: '48px',
-              height: '48px',
+              width: '52px',
+              height: '52px',
               borderRadius: 'var(--radius-md)',
               background: 'var(--grad-primary)',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 16px var(--primary-glow)',
+              boxShadow: '0 6px 20px var(--primary-glow)',
               marginBottom: '16px',
             }}
           >
-            <Sparkles size={26} color="white" />
+            <Sparkles size={28} color="white" />
           </div>
-          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontSize: '1.875rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
             CampusPulse
           </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '4px' }}>
-            College Event Management System &bull; Portal Sign In
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '6px' }}>
+            Event Management System &bull; Portal Sign In
           </p>
         </div>
 
@@ -107,54 +102,43 @@ export const LoginPage: React.FC = () => {
               borderRadius: 'var(--radius-md)',
               color: '#fda4af',
               fontSize: '0.875rem',
-              marginBottom: '20px',
+              marginBottom: '22px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
             }}
           >
-            {error}
+            <span style={{ fontSize: '1rem' }}>⚠️</span>
+            <span>{error}</span>
           </div>
         )}
 
-        {/* Standard Credentials Form */}
-        <form onSubmit={handleSubmit} style={{ marginBottom: '28px' }}>
-          <div className="form-group">
-            <label className="form-label">Email Address</label>
+        {/* Credentials Form */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="form-group" style={{ margin: 0 }}>
+            <label className="form-label" style={{ fontWeight: 600 }}>Email Address</label>
             <div style={{ position: 'relative' }}>
               <input
                 type="email"
-                className="form-input"
+                className="form-control"
                 required
                 placeholder="name@college.edu"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={{ paddingLeft: '40px' }}
+                style={{ paddingLeft: '42px', height: '44px' }}
+                autoComplete="email"
               />
               <Mail
                 size={18}
                 color="var(--text-dim)"
-                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
+                style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
               />
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="password"
-                className="form-input"
-                required
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={{ paddingLeft: '40px' }}
-              />
-              <Lock
-                size={18}
-                color="var(--text-dim)"
-                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
-              />
-            </div>
-            <div style={{ textAlign: 'right', marginTop: '6px' }}>
+          <div className="form-group" style={{ margin: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label className="form-label" style={{ margin: 0, fontWeight: 600 }}>Password</label>
               <Link
                 to="/forgot-password"
                 style={{ fontSize: '0.8125rem', color: 'var(--primary)', textDecoration: 'none' }}
@@ -162,67 +146,76 @@ export const LoginPage: React.FC = () => {
                 Forgot password?
               </Link>
             </div>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="form-control"
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ paddingLeft: '42px', paddingRight: '42px', height: '44px' }}
+                autoComplete="current-password"
+              />
+              <Lock
+                size={18}
+                color="var(--text-dim)"
+                style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-dim)',
+                  cursor: 'pointer',
+                  padding: 4,
+                }}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
-            className="btn btn-primary"
-            style={{ width: '100%', marginTop: '8px' }}
+            className="btn btn-primary btn-lg"
+            style={{ width: '100%', marginTop: '8px', height: '46px', fontSize: '0.9375rem' }}
             disabled={loading}
           >
-            {loading ? 'Authenticating...' : 'Sign In'} <ArrowRight size={16} />
+            {loading ? 'Authenticating...' : 'Sign In'} <ArrowRight size={18} />
           </button>
         </form>
 
-        {/* Quick Demo Switcher Section */}
-        <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '24px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '12px',
-            }}
-          >
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              1-Click Demo Accounts
-            </span>
-            <span style={{ fontSize: '0.6875rem', color: 'var(--emerald)' }}>
-              Instant Sandbox Access
+        {/* System Credentials Guidance Box */}
+        <div
+          style={{
+            marginTop: '28px',
+            padding: '16px',
+            borderRadius: 'var(--radius-md)',
+            background: 'rgba(255, 255, 255, 0.02)',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: 'var(--text-muted)' }}>
+            <ShieldCheck size={16} color="var(--primary)" />
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Official Portal Access
             </span>
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {DEMO_USERS.map((demo) => (
-              <button
-                key={demo.id}
-                type="button"
-                onClick={() => handleDemoLogin(demo.token, demo.role)}
-                className="btn btn-secondary btn-sm"
-                style={{
-                  justifyContent: 'space-between',
-                  padding: '8px 12px',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                }}
-              >
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-main)' }}>
-                    {demo.name}
-                  </div>
-                  <div style={{ fontSize: '0.6875rem', color: 'var(--text-dim)' }}>
-                    {demo.description.split(':')[0]}
-                  </div>
-                </div>
-                <span className={`badge ${demo.role === 'admin' ? 'badge-primary' : demo.role === 'coordinator' ? 'badge-warning' : 'badge-neutral'}`}>
-                  {demo.role}
-                </span>
-              </button>
-            ))}
-          </div>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--text-dim)', lineHeight: 1.5, margin: 0 }}>
+            Sign in with your assigned Administrator, Coordinator, or Jury credentials. New accounts can be provisioned by the System Administrator.
+          </p>
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '24px' }}>
-          <Link to="/" style={{ fontSize: '0.8125rem', color: 'var(--text-dim)' }}>
+          <Link to="/" style={{ fontSize: '0.8125rem', color: 'var(--text-dim)', transition: 'color 0.2s' }}>
             &larr; Back to Public Events Portal
           </Link>
         </div>

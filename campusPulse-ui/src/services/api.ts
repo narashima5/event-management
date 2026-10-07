@@ -338,6 +338,37 @@ class ApiService {
   // ==========================================
   // REPORTS, LEADERBOARDS & DASHBOARD STATS
   // ==========================================
+  private appendAuthToken(url: string): string {
+    const token = localStorage.getItem('auth_token');
+    if (!token) return url;
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}token=${encodeURIComponent(token)}`;
+  }
+
+  async downloadExportFile(url: string, filename: string): Promise<void> {
+    const token = localStorage.getItem('auth_token');
+    const finalUrl = this.appendAuthToken(url);
+    try {
+      const response = await fetch(finalUrl, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) {
+        throw new Error(`Download failed with HTTP ${response.status}`);
+      }
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (e) {
+      window.open(finalUrl, '_blank');
+    }
+  }
+
 
   async queryParticipants(filters: Record<string, any> = {}): Promise<any> {
     const query = new URLSearchParams();
@@ -353,7 +384,7 @@ class ApiService {
       if (v !== undefined && v !== '') query.append(k, String(v));
     });
     const subPath = format === 'excel' ? 'participants/excel' : format === 'print' ? 'participants/print' : 'participants/csv';
-    return `/api/reports/export/${subPath}?${query.toString()}`;
+    return this.appendAuthToken(`${API_BASE}/reports/export/${subPath}?${query.toString()}`);
   }
 
   // 2. Program Registration Report
@@ -370,7 +401,7 @@ class ApiService {
     Object.entries(filters).forEach(([k, v]) => {
       if (v !== undefined && v !== '') query.append(k, String(v));
     });
-    return `/api/reports/export/program-registrations/${format}?${query.toString()}`;
+    return this.appendAuthToken(`${API_BASE}/reports/export/program-registrations/${format}?${query.toString()}`);
   }
 
   // 3. Event Registration Report
@@ -379,7 +410,7 @@ class ApiService {
   }
 
   getExportEventRegistrationUrl(format: 'csv' | 'excel' = 'csv'): string {
-    return `/api/reports/export/event-registrations/${format}`;
+    return this.appendAuthToken(`${API_BASE}/reports/export/event-registrations/${format}`);
   }
 
   // 4. Program Winners Report
@@ -396,7 +427,7 @@ class ApiService {
     Object.entries(filters).forEach(([k, v]) => {
       if (v !== undefined && v !== '') query.append(k, String(v));
     });
-    return `/api/reports/export/winners/${format}?${query.toString()}`;
+    return this.appendAuthToken(`${API_BASE}/reports/export/winners/${format}?${query.toString()}`);
   }
 
   // 5. Event Winners Report
@@ -405,7 +436,7 @@ class ApiService {
   }
 
   getExportEventWinnersUrl(eventId: string, format: 'csv' | 'excel' = 'csv'): string {
-    return `/api/reports/export/event-winners/${format}?eventId=${eventId}`;
+    return this.appendAuthToken(`${API_BASE}/reports/export/event-winners/${format}?eventId=${eventId}`);
   }
 
   // 6. Department Leaderboard
@@ -416,7 +447,7 @@ class ApiService {
 
   getExportLeaderboardUrl(eventId?: string, format: 'csv' | 'excel' = 'csv'): string {
     const q = eventId ? `?eventId=${eventId}` : '';
-    return `/api/reports/export/leaderboard/${format}${q}`;
+    return this.appendAuthToken(`${API_BASE}/reports/export/leaderboard/${format}${q}`);
   }
 
   // 7. Overall Leaderboard
@@ -425,7 +456,7 @@ class ApiService {
   }
 
   getExportOverallLeaderboardUrl(format: 'csv' | 'excel' = 'csv'): string {
-    return `/api/reports/export/overall-leaderboard/${format}`;
+    return this.appendAuthToken(`${API_BASE}/reports/export/overall-leaderboard/${format}`);
   }
 
   // 8. Jury Scoring Audit Report
@@ -442,7 +473,7 @@ class ApiService {
     Object.entries(filters).forEach(([k, v]) => {
       if (v !== undefined && v !== '') query.append(k, String(v));
     });
-    return `/api/reports/export/jury-scoring/${format}?${query.toString()}`;
+    return this.appendAuthToken(`${API_BASE}/reports/export/jury-scoring/${format}?${query.toString()}`);
   }
 
   async getEventLeaderboards(

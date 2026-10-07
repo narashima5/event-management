@@ -113,8 +113,8 @@ npm install
    ```bash
    npm run dev
    ```
-   - Client: [http://localhost:5173](http://localhost:5173)
-   - Backend API: [http://localhost:5000](http://localhost:5000)
+   - Client: [http://localhost:5173](http://localhost:5173) (Production: [https://campus-pulse-f8d7a.web.app](https://campus-pulse-f8d7a.web.app))
+   - Backend API: [http://localhost:5000](http://localhost:5000) (Production: [https://campusepulse-api.onrender.com](https://campusepulse-api.onrender.com))
 
 2. **Run Tests**:
    ```bash

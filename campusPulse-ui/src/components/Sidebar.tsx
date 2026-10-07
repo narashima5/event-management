@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth, DEMO_USERS } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import {
   LayoutDashboard,
   Calendar,
@@ -24,7 +24,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { user, role, logout, loginWithToken } = useAuth();
+  const { user, role, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -168,40 +168,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* Demo Role Switcher Quick Pill Bar */}
-        <div style={{ padding: '12px 16px', background: 'rgba(0, 0, 0, 0.25)', borderTop: '1px solid var(--border-subtle)' }}>
-          <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--text-dim)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Quick Demo Switcher
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
-            {DEMO_USERS.slice(0, 4).map((u) => (
-              <button
-                key={u.id}
-                onClick={async () => {
-                  await loginWithToken(u.token);
-                  if (u.role === 'admin') navigate('/admin/dashboard');
-                  else if (u.role === 'coordinator') navigate('/coordinator/dashboard');
-                  else if (u.role === 'jury') navigate('/jury/dashboard');
-                }}
-                className="btn btn-secondary btn-sm"
-                style={{
-                  fontSize: '0.6875rem',
-                  padding: '4px 6px',
-                  justifyContent: 'flex-start',
-                  borderColor: user?.email === u.email ? 'var(--primary)' : undefined,
-                  background: user?.email === u.email ? 'rgba(99, 102, 241, 0.2)' : undefined,
-                }}
-                title={u.description}
-              >
-                {u.name.split(' ')[0]} ({u.role[0].toUpperCase()})
-              </button>
-            ))}
-          </div>
-
+        {/* Sidebar Footer with Account Info & Sign Out */}
+        <div style={{ padding: '16px 20px', background: 'rgba(0, 0, 0, 0.25)', borderTop: '1px solid var(--border-subtle)' }}>
           <button
             onClick={handleLogout}
             className="btn btn-ghost btn-sm"
-            style={{ width: '100%', marginTop: '10px', color: 'var(--rose)', justifyContent: 'center' }}
+            style={{ width: '100%', color: 'var(--rose)', justifyContent: 'center', fontWeight: 600 }}
           >
             <LogOut size={16} /> Sign Out
           </button>

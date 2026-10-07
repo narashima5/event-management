@@ -8,7 +8,7 @@ This guide provides step-by-step instructions for deploying the backend REST API
 
 * **Service Type**: Web Service
 * **Runtime**: Node.js
-* **Root / Base Directory**: `CampusePulse-API`
+* **Root / Base Directory**: *(Leave Blank / Empty)*
 * **Build Command**: `npm install && npm run build`
 * **Start Command**: `npm start`
 * **Health Check Path**: `/api/health`
@@ -58,10 +58,10 @@ Fill in the fields on the creation page:
 | **Name** | `campusepulse-api` | Your unique service name |
 | **Region** | Choose closest to you (e.g., *Singapore* or *Oregon*) | Match your Firestore region if possible |
 | **Branch** | `main` | Default production branch |
-| **Root Directory** | `CampusePulse-API` | **Important**: Tells Render to build the backend folder |
+| **Root Directory** | *(LEAVE BLANK)* | **CRITICAL**: Leave this completely empty! The `CampusePulse-API` repo already has `package.json` at its root. Do **NOT** put `src` or `CampusePulse-API`. |
 | **Runtime** | `Node` | Native Node.js environment |
 | **Build Command** | `npm install && npm run build` | Compiles TypeScript into `dist/` |
-| **Start Command** | `npm start` | Runs `node dist/index.js` |
+| **Start Command** | `npm start` | Runs `node dist/index.js` (Do NOT enter `node src/dist/...`) |
 | **Instance Type** | `Free` | Free tier includes 750 free hours/month |
 
 ---
@@ -95,6 +95,22 @@ Scroll down to the **Environment Variables** section and click **Add Environment
 3. Click **Create Web Service**.
 
 Render will now pull your repository, run the build, and start the service!
+
+---
+
+### ⚠️ Troubleshooting: `Cannot find module .../src/src/dist/index.js`
+
+If you encounter:
+```
+Error: Cannot find module '/opt/render/project/src/src/dist/index.js'
+```
+* **Cause**: In Render **Settings**, the **Root Directory** was set to `src`, or **Start Command** was set to `node src/dist/index.js`. Because Render clones your repo into `/opt/render/project/src/`, entering `src` creates the duplicate path `/opt/render/project/src/src/`.
+* **Fix**:
+  1. Go to your Render Dashboard ➔ select `campusepulse-api` ➔ **Settings**.
+  2. Clear the **Root Directory** field completely (**Leave it blank**).
+  3. Ensure **Build Command** is: `npm install && npm run build`
+  4. Ensure **Start Command** is: `npm start`
+  5. Click **Save Changes**, then click **Manual Deploy** ➔ **Clear build cache & deploy**.
 
 ---
 

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { getDb } from '../database/firestore';
+import { getDb, getAuth } from '../database/firestore';
 import { User, UserSchema } from '../types';
 import { AuditService } from '../services/auditService';
 
@@ -30,26 +30,54 @@ export class UserController {
 
   static async createUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { name, email, role, phone, department } = req.body;
+      const { name, email, role, phone, department, password } = req.body;
       if (!name || !email || !role) {
         res.status(400).json({ success: false, message: 'Name, email and role are required' });
         return;
       }
 
       const db = getDb();
-      const existing = await db.collection('users').where('email', '==', email.toLowerCase()).get();
+      const auth = getAuth();
+      const normalizedEmail = email.toLowerCase().trim();
+
+      const existing = await db.collection('users').where('email', '==', normalizedEmail).get();
       if (!existing.empty) {
         res.status(409).json({ success: false, message: 'User with this email already exists' });
         return;
       }
 
-      const uid = `user_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      let uid = '';
+      if (auth) {
+        try {
+          const authRecord = await auth.createUser({
+            email: normalizedEmail,
+            password: password || 'CampusPulse@123',
+            displayName: name,
+          });
+          uid = authRecord.uid;
+        } catch (authErr: any) {
+          if (authErr.code === 'auth/email-already-exists') {
+            const existingAuthUser = await auth.getUserByEmail(normalizedEmail);
+            uid = existingAuthUser.uid;
+            if (password) {
+              await auth.updateUser(uid, { password });
+            }
+          } else {
+            console.warn('Firebase Auth user creation notice:', authErr);
+          }
+        }
+      }
+
+      if (!uid) {
+        uid = `user_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      }
+
       const now = new Date().toISOString();
 
       const newUser: User = {
         uid,
         name,
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         role,
         phone,
         department,

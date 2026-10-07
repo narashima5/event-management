@@ -175,8 +175,8 @@ CLIENT_ORIGIN=http://localhost:5173
 Create a `client/.env` file with:
 
 ```env
-# Backend REST API endpoint
-VITE_API_BASE_URL=http://localhost:5000/api
+# Backend REST API endpoint (Production on Render)
+VITE_API_BASE_URL=https://campusepulse-api.onrender.com/api
 
 # Firebase Web App Credentials (from firebaseConfig in Project Settings)
 VITE_FIREBASE_API_KEY=AIzaSyD-EXAMPLE_KEY_1234567890

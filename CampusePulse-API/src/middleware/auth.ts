@@ -59,16 +59,23 @@ const DEV_TOKENS: Record<string, AuthenticatedUser> = {
 
 export async function authenticateUser(req: Request, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  let token: string | undefined;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.query.token && typeof req.query.token === 'string') {
+    token = req.query.token;
+  }
+
+  if (!token) {
     res.status(401).json({
       success: false,
-      message: 'Unauthorized: Missing or invalid Authorization header',
+      message: 'Unauthorized: Missing Authorization header or token',
       code: 'UNAUTHORIZED',
     });
     return;
   }
 
-  const token = authHeader.split(' ')[1];
 
   // 1. Check DEV tokens (works seamlessly in tests & development)
   if (DEV_TOKENS[token]) {

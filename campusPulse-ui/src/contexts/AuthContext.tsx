@@ -3,58 +3,6 @@ import { User, Assignment, UserRole } from '../types';
 import { api } from '../services/api';
 import { loginWithFirebaseAuth, logoutFirebaseAuth } from '../services/firebase';
 
-export interface DemoUserOption {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  description: string;
-  token: string;
-}
-
-export const DEMO_USERS: DemoUserOption[] = [
-  {
-    id: 'admin_1',
-    name: 'Prof. Sharma',
-    email: 'admin@college.edu',
-    role: 'admin',
-    description: 'Full Access across all Events, Programs, Users & Reports',
-    token: 'dev-admin-token',
-  },
-  {
-    id: 'coord_1',
-    name: 'Sarah Jenkins',
-    email: 'dance.coord@college.edu',
-    role: 'coordinator',
-    description: 'Coordinator: Assigned strictly to Solo & Contemporary Dance',
-    token: 'dev-coord-a-token',
-  },
-  {
-    id: 'coord_2',
-    name: 'Alan Turing',
-    email: 'quiz.coord@college.edu',
-    role: 'coordinator',
-    description: 'Coordinator: Assigned strictly to Grand Tech Quiz',
-    token: 'dev-coord-b-token',
-  },
-  {
-    id: 'jury_1',
-    name: 'Maestro David',
-    email: 'dance.judge@college.edu',
-    role: 'jury',
-    description: 'Jury Member: Assigned strictly to Solo Dance evaluation',
-    token: 'dev-jury-a-token',
-  },
-  {
-    id: 'jury_2',
-    name: 'Dr. Evelyn Fox',
-    email: 'quiz.judge@college.edu',
-    role: 'jury',
-    description: 'Jury Member: Assigned strictly to Grand Tech Quiz judging',
-    token: 'dev-jury-b-token',
-  },
-];
-
 interface AuthContextType {
   user: User | null;
   role: UserRole | null;
@@ -107,16 +55,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithCredentials = async (email: string, pass: string) => {
-    // Check if matches one of demo users for instant zero-friction experience
-    const matched = DEMO_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
-    if (matched) {
-      await loginWithToken(matched.token);
-      return;
+    setLoading(true);
+    try {
+      const token = await loginWithFirebaseAuth(email, pass);
+      await loginWithToken(token);
+    } catch (err) {
+      setLoading(false);
+      throw err;
     }
-
-    // Call Firebase Auth to get live ID token
-    const token = await loginWithFirebaseAuth(email, pass);
-    await loginWithToken(token);
   };
 
   const logout = () => {
