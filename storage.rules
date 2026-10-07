@@ -1,0 +1,53 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'admin' ||
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+    
+    function isAllowedImageOrPdf() {
+      return request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType == 'application/pdf';
+    }
+    
+    function isUnderMaxSize(maxMegabytes) {
+      return request.resource.size <= maxMegabytes * 1024 * 1024;
+    }
+    
+    // Public Assets: Event logos, banners, badges
+    match /public/events/{eventId}/{fileName} {
+      // Anyone can read public event media
+      allow read: if true;
+      // Only administrators can upload/modify event visual assets
+      allow write: if isAdmin() && isAllowedImageOrPdf() && isUnderMaxSize(5);
+    }
+    
+    // Participant Uploads: ID Proofs, Submission Files
+    match /registrations/{programId}/{registrationId}/{fileName} {
+      // Admins and coordinators can inspect participant files
+      allow read: if isAuthenticated();
+      // File uploads during registration must be safe image/pdf under 10MB
+      allow write: if isAllowedImageOrPdf() && isUnderMaxSize(10);
+    }
+    
+    // Certificates and Reports
+    match /reports/{eventId}/{fileName} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // Default Deny for everything else
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

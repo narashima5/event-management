@@ -1,0 +1,19 @@
+{
+  "name": "college-event-management-system",
+  "version": "1.0.0",
+  "description": "Production-ready College Event Management Web Application",
+  "private": true,
+  "workspaces": [
+    "CampusePulse-API",
+    "campusPulse-ui"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=CampusePulse-API\" \"npm run dev --workspace=campusPulse-ui\"",
+    "build": "npm run build --workspace=CampusePulse-API && npm run build --workspace=campusPulse-ui",
+    "test": "npm run test --workspace=CampusePulse-API",
+    "seed": "npm run seed --workspace=CampusePulse-API"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
