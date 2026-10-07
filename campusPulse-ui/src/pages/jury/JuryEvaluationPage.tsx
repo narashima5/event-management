@@ -221,8 +221,11 @@ export const JuryEvaluationPage: React.FC = () => {
               {evaluations.map((item) => {
                 const isSelected = item.registration.id === selectedRegId;
                 const reg = item.registration;
-                const name = reg.participantData?.name || reg.participantData?.teamName || 'Unknown';
-                const dept = reg.participantData?.department || 'N/A';
+                const isTeam = reg.participantType === 'TEAM' || Boolean(reg.teamName);
+                const name = isTeam
+                  ? (reg.teamName || reg.participantData?.teamName || 'Team')
+                  : (reg.participantData?.name || reg.participantData?.fullName || reg.teamName || 'Unknown');
+                const dept = reg.department || reg.participantData?.department || 'N/A';
 
                 return (
                   <div
@@ -292,13 +295,32 @@ export const JuryEvaluationPage: React.FC = () => {
                       <span className="badge badge-default">Ready for Scoring</span>
                     )}
                   </div>
-                  <h2 style={{ fontSize: '1.375rem', fontWeight: 800 }}>
-                    {activeItem.registration.participantData?.name || activeItem.registration.participantData?.teamName}
-                  </h2>
-                  <div style={{ fontSize: '0.8125rem', color: 'var(--text-dim)' }}>
-                    Department: <strong>{activeItem.registration.participantData?.department || 'N/A'}</strong>
-                    {activeItem.registration.participantData?.registerNumber && ` • Reg: ${activeItem.registration.participantData.registerNumber}`}
-                  </div>
+                  {(() => {
+                    const r = activeItem.registration;
+                    const isTeamReg = r.participantType === 'TEAM' || Boolean(r.teamName);
+                    const titleName = isTeamReg
+                      ? (r.teamName || r.participantData?.teamName || 'Team')
+                      : (r.participantData?.name || r.participantData?.fullName || r.teamName || 'Participant');
+                    const deptName = r.department || r.participantData?.department || 'N/A';
+                    const members = r.teamMembers || r.participantData?.teamMembers;
+
+                    return (
+                      <>
+                        <h2 style={{ fontSize: '1.375rem', fontWeight: 800 }}>
+                          {titleName}
+                        </h2>
+                        <div style={{ fontSize: '0.8125rem', color: 'var(--text-dim)' }}>
+                          Department: <strong>{deptName}</strong>
+                          {isTeamReg && members && members.length > 0 && (
+                            <div style={{ marginTop: '4px', color: 'var(--text-muted)' }}>
+                              Members: {members.map((m: any) => `${m.name || m}${m.registerNumber ? ` (${m.registerNumber})` : ''}`).join(', ')}
+                            </div>
+                          )}
+                          {!isTeamReg && r.participantData?.registerNumber && ` • Reg: ${r.participantData.registerNumber}`}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Score Summary Box */}
@@ -470,7 +492,7 @@ export const JuryEvaluationPage: React.FC = () => {
         onConfirm={handleFinalSubmit}
         title="Lock & Submit Official Evaluation?"
         message={`Are you sure you want to finalize this score (${totalScore.toFixed(1)} / ${maxPossible} pts) for ${
-          activeItem?.registration?.participantData?.name || activeItem?.registration?.registrationNumber
+          activeItem?.registration?.teamName || activeItem?.registration?.participantData?.name || activeItem?.registration?.registrationNumber
         }? Once submitted, this score is permanently locked to prevent tampering unless unlocked by an Administrator.`}
         confirmLabel="Confirm & Lock Score"
         isDestructive={false}

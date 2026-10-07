@@ -29,10 +29,11 @@ router.post(
   ScoreController.unlockScore
 );
 
-// Admin gets all jury scores for a program
+// Admin or assigned Coordinator gets all jury scores for a program
 router.get(
   '/programs/:programId/all',
-  requireRole('admin'),
+  requireProgramAccess,
+  requireRole('admin', 'coordinator'),
   ScoreController.getProgramScores
 );
 

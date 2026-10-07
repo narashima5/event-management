@@ -318,15 +318,15 @@ const ParticipantReportPanel: React.FC<{ events: Event[]; programs: Program[] }>
         </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <a href={exportPrintUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">
+          <button onClick={() => api.printExportHtml(exportPrintUrl)} className="btn btn-secondary btn-sm">
             <Printer size={15} /> Print / PDF
-          </a>
-          <a href={exportExcelUrl} download className="btn btn-secondary btn-sm">
+          </button>
+          <button onClick={() => api.downloadExportFile(exportExcelUrl, `participants_report_${Date.now()}.xls`)} className="btn btn-secondary btn-sm">
             <FileSpreadsheet size={15} color="var(--emerald)" /> Export Excel (.xls)
-          </a>
-          <a href={exportCsvUrl} download className="btn btn-primary btn-sm">
+          </button>
+          <button onClick={() => api.downloadExportFile(exportCsvUrl, `participants_report_${Date.now()}.csv`)} className="btn btn-primary btn-sm">
             <Download size={15} /> Export CSV
-          </a>
+          </button>
         </div>
       </div>
 
@@ -756,12 +756,12 @@ const ProgramRegistrationReportPanel: React.FC<{ events: Event[] }> = ({ events 
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          <a href={excelUrl} download className="btn btn-secondary btn-sm">
+          <button onClick={() => api.downloadExportFile(excelUrl, `report_${Date.now()}.xls`)} className="btn btn-secondary btn-sm">
             <FileSpreadsheet size={15} color="var(--emerald)" /> Export Excel (.xls)
-          </a>
-          <a href={csvUrl} download className="btn btn-primary btn-sm">
+          </button>
+          <button onClick={() => api.downloadExportFile(csvUrl, `report_${Date.now()}.csv`)} className="btn btn-primary btn-sm">
             <Download size={15} /> Export CSV
-          </a>
+          </button>
         </div>
       </div>
 
@@ -852,12 +852,12 @@ const EventRegistrationReportPanel: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
         <span className="badge badge-primary">{data.length} Festival Events Registered</span>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <a href={excelUrl} download className="btn btn-secondary btn-sm">
+          <button onClick={() => api.downloadExportFile(excelUrl, `report_${Date.now()}.xls`)} className="btn btn-secondary btn-sm">
             <FileSpreadsheet size={15} color="var(--emerald)" /> Export Excel (.xls)
-          </a>
-          <a href={csvUrl} download className="btn btn-primary btn-sm">
+          </button>
+          <button onClick={() => api.downloadExportFile(csvUrl, `report_${Date.now()}.csv`)} className="btn btn-primary btn-sm">
             <Download size={15} /> Export CSV
-          </a>
+          </button>
         </div>
       </div>
 
@@ -974,12 +974,12 @@ const ProgramWinnersReportPanel: React.FC<{ programs: Program[] }> = ({ programs
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          <a href={excelUrl} download className="btn btn-secondary btn-sm">
+          <button onClick={() => api.downloadExportFile(excelUrl, `report_${Date.now()}.xls`)} className="btn btn-secondary btn-sm">
             <FileSpreadsheet size={15} color="var(--emerald)" /> Export Excel (.xls)
-          </a>
-          <a href={csvUrl} download className="btn btn-primary btn-sm">
+          </button>
+          <button onClick={() => api.downloadExportFile(csvUrl, `report_${Date.now()}.csv`)} className="btn btn-primary btn-sm">
             <Download size={15} /> Export CSV
-          </a>
+          </button>
         </div>
       </div>
 
@@ -1080,12 +1080,12 @@ const EventWinnersReportPanel: React.FC<{ events: Event[] }> = ({ events }) => {
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          <a href={excelUrl} download className="btn btn-secondary btn-sm">
+          <button onClick={() => api.downloadExportFile(excelUrl, `report_${Date.now()}.xls`)} className="btn btn-secondary btn-sm">
             <FileSpreadsheet size={15} color="var(--emerald)" /> Export Excel (.xls)
-          </a>
-          <a href={csvUrl} download className="btn btn-primary btn-sm">
+          </button>
+          <button onClick={() => api.downloadExportFile(csvUrl, `report_${Date.now()}.csv`)} className="btn btn-primary btn-sm">
             <Download size={15} /> Export CSV
-          </a>
+          </button>
         </div>
       </div>
 
@@ -1177,12 +1177,12 @@ const DepartmentLeaderboardReportPanel: React.FC<{ events: Event[] }> = ({ event
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          <a href={excelUrl} download className="btn btn-secondary btn-sm">
+          <button onClick={() => api.downloadExportFile(excelUrl, `report_${Date.now()}.xls`)} className="btn btn-secondary btn-sm">
             <FileSpreadsheet size={15} color="var(--emerald)" /> Export Excel (.xls)
-          </a>
-          <a href={csvUrl} download className="btn btn-primary btn-sm">
+          </button>
+          <button onClick={() => api.downloadExportFile(csvUrl, `report_${Date.now()}.csv`)} className="btn btn-primary btn-sm">
             <Download size={15} /> Export CSV
-          </a>
+          </button>
         </div>
       </div>
 
@@ -1269,12 +1269,12 @@ const OverallLeaderboardReportPanel: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          <a href={excelUrl} download className="btn btn-secondary btn-sm">
+          <button onClick={() => api.downloadExportFile(excelUrl, `report_${Date.now()}.xls`)} className="btn btn-secondary btn-sm">
             <FileSpreadsheet size={15} color="var(--emerald)" /> Export Excel (.xls)
-          </a>
-          <a href={csvUrl} download className="btn btn-primary btn-sm">
+          </button>
+          <button onClick={() => api.downloadExportFile(csvUrl, `report_${Date.now()}.csv`)} className="btn btn-primary btn-sm">
             <Download size={15} /> Export CSV
-          </a>
+          </button>
         </div>
       </div>
 
@@ -1391,12 +1391,12 @@ const JuryScoringReportPanel: React.FC<{ programs: Program[] }> = ({ programs })
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          <a href={excelUrl} download className="btn btn-secondary btn-sm">
+          <button onClick={() => api.downloadExportFile(excelUrl, `report_${Date.now()}.xls`)} className="btn btn-secondary btn-sm">
             <FileSpreadsheet size={15} color="var(--emerald)" /> Export Excel (.xls)
-          </a>
-          <a href={csvUrl} download className="btn btn-primary btn-sm">
+          </button>
+          <button onClick={() => api.downloadExportFile(csvUrl, `report_${Date.now()}.csv`)} className="btn btn-primary btn-sm">
             <Download size={15} /> Export CSV
-          </a>
+          </button>
         </div>
       </div>
 

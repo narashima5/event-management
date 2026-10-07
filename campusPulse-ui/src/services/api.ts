@@ -353,7 +353,12 @@ class ApiService {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!response.ok) {
-        throw new Error(`Download failed with HTTP ${response.status}`);
+        let msg = `Download failed with HTTP ${response.status}`;
+        try {
+          const errData = await response.json();
+          if (errData?.message) msg = errData.message;
+        } catch (_) {}
+        throw new Error(msg);
       }
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
@@ -364,8 +369,35 @@ class ApiService {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(downloadUrl);
-    } catch (e) {
-      window.open(finalUrl, '_blank');
+    } catch (e: any) {
+      alert(`Report export failed: ${e.message || 'Error downloading file'}`);
+    }
+  }
+
+  async printExportHtml(url: string): Promise<void> {
+    const token = localStorage.getItem('auth_token');
+    const finalUrl = this.appendAuthToken(url);
+    try {
+      const response = await fetch(finalUrl, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) {
+        let msg = `Print request failed with HTTP ${response.status}`;
+        try {
+          const errData = await response.json();
+          if (errData?.message) msg = errData.message;
+        } catch (_) {}
+        throw new Error(msg);
+      }
+      const html = await response.text();
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+      }
+    } catch (e: any) {
+      alert(`Print report failed: ${e.message || 'Error generating printable report'}`);
     }
   }
 

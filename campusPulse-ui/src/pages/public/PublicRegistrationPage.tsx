@@ -44,8 +44,12 @@ export const PublicRegistrationPage: React.FC = () => {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [teamName, setTeamName] = useState<string>('');
   const [department, setDepartment] = useState<string>('');
-  const [teamMembers, setTeamMembers] = useState<Array<{ name: string; registerNumber: string; email: string }>>([
-    { name: '', registerNumber: '', email: '' },
+  const [leaderName, setLeaderName] = useState<string>('');
+  const [leaderRegisterNumber, setLeaderRegisterNumber] = useState<string>('');
+  const [leaderEmail, setLeaderEmail] = useState<string>('');
+  const [leaderPhone, setLeaderPhone] = useState<string>('');
+  const [teamMembers, setTeamMembers] = useState<Array<{ name: string; registerNumber: string; email: string; phone?: string }>>([
+    { name: '', registerNumber: '', email: '', phone: '' },
   ]);
 
   // Success Confirmation State
@@ -115,7 +119,7 @@ export const PublicRegistrationPage: React.FC = () => {
   };
 
   const handleAddTeamMember = () => {
-    setTeamMembers((prev) => [...prev, { name: '', registerNumber: '', email: '' }]);
+    setTeamMembers((prev) => [...prev, { name: '', registerNumber: '', email: '', phone: '' }]);
   };
 
   const handleRemoveTeamMember = (index: number) => {
@@ -180,8 +184,62 @@ export const PublicRegistrationPage: React.FC = () => {
       };
 
       if (program.participationType === 'TEAM') {
-        payload.teamName = teamName || formData.teamName;
-        payload.teamMembers = teamMembers.filter((m) => m.name.trim() !== '');
+        if (!teamName.trim()) {
+          setErrorMsg('Team Name is required');
+          setSubmitting(false);
+          return;
+        }
+        if (!leaderName.trim() || !leaderRegisterNumber.trim()) {
+          setErrorMsg('Team Leader Name and College Register Number are mandatory');
+          setSubmitting(false);
+          return;
+        }
+
+        const validMembers = teamMembers.filter((m) => m.name.trim() !== '');
+        for (let i = 0; i < validMembers.length; i++) {
+          if (!validMembers[i].registerNumber.trim()) {
+            setErrorMsg(`College Register Number is required for Team Member #${i + 1} (${validMembers[i].name})`);
+            setSubmitting(false);
+            return;
+          }
+        }
+
+        const fullMemberList = [
+          {
+            name: leaderName.trim(),
+            registerNumber: leaderRegisterNumber.trim(),
+            email: leaderEmail.trim() || undefined,
+            phone: leaderPhone.trim() || undefined,
+            role: 'Team Leader',
+          },
+          ...validMembers.map((m) => ({
+            name: m.name.trim(),
+            registerNumber: m.registerNumber.trim(),
+            email: m.email.trim() || undefined,
+            phone: m.phone?.trim() || undefined,
+            role: 'Team Member',
+          })),
+        ];
+
+        payload.teamName = teamName.trim();
+        payload.teamMembers = fullMemberList;
+        payload.participantData = {
+          ...payload.participantData,
+          name: leaderName.trim(),
+          registerNumber: leaderRegisterNumber.trim(),
+          leaderName: leaderName.trim(),
+          leaderRegisterNumber: leaderRegisterNumber.trim(),
+          email: leaderEmail.trim(),
+          phone: leaderPhone.trim(),
+          teamName: teamName.trim(),
+          teamMembers: fullMemberList,
+          teamLeader: {
+            name: leaderName.trim(),
+            registerNumber: leaderRegisterNumber.trim(),
+            email: leaderEmail.trim(),
+            phone: leaderPhone.trim(),
+          },
+        };
       }
 
       const result = await api.registerPublic(event.code, program.code, payload);

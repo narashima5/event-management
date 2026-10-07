@@ -32,6 +32,7 @@ export const CoordinatorProgramPage: React.FC = () => {
   const [program, setProgram] = useState<Program | null>(null);
   const [participants, setParticipants] = useState<Registration[]>([]);
   const [results, setResults] = useState<Result[]>([]);
+  const [scores, setScores] = useState<any[]>([]);
   const [juryAssignments, setJuryAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [unauthorized, setUnauthorized] = useState(false);
@@ -69,15 +70,17 @@ export const CoordinatorProgramPage: React.FC = () => {
         // Not critical if fails
       }
 
-      // Fetch results if published
-      if (prog.status === 'RESULTS_PUBLISHED') {
-        try {
-          const res = await api.getProgramResults(id);
-          setResults(res);
-        } catch (e) {
-          // Ignore
-        }
-      }
+      // Fetch program results
+      try {
+        const res = await api.getProgramResults(id);
+        setResults(res || []);
+      } catch (e) {}
+
+      // Fetch jury scores for participant marks display
+      try {
+        const allScores = await api.getProgramScores(id);
+        setScores(allScores || []);
+      } catch (e) {}
     } catch (err: any) {
       if (err.status === 403) {
         setUnauthorized(true);
@@ -92,6 +95,39 @@ export const CoordinatorProgramPage: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [id]);
+
+    const getParticipantMarks = (regId: string) => {
+    // 1. Official result
+    const res = results.find((r) => r.registrationId === regId);
+    if (res && res.totalScore !== undefined) {
+      return {
+        score: res.totalScore.toFixed(1),
+        rank: res.rank ? `#${res.rank}` : null,
+        status: res.resultStatus,
+      };
+    }
+    // 2. Evaluated jury score
+    const regScores = scores.filter((s) => s.registrationId === regId && s.status === 'SUBMITTED');
+    if (regScores.length > 0) {
+      const avg = regScores.reduce((acc, s) => acc + (Number(s.totalScore) || 0), 0) / regScores.length;
+      return {
+        score: avg.toFixed(1),
+        rank: null,
+        status: 'EVALUATED',
+        juryCount: regScores.length,
+      };
+    }
+    // 3. Draft score
+    const draftScores = scores.filter((s) => s.registrationId === regId);
+    if (draftScores.length > 0) {
+      return {
+        score: 'Drafting',
+        rank: null,
+        status: 'DRAFT',
+      };
+    }
+    return null;
+  };
 
   const handleAttendanceChange = async (regId: string, newStatus: 'PENDING' | 'PRESENT' | 'ABSENT') => {
     try {
@@ -129,7 +165,7 @@ export const CoordinatorProgramPage: React.FC = () => {
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       const num = p.registrationNumber.toLowerCase();
-      const name = (p.participantData?.name || p.participantData?.teamName || '').toLowerCase();
+      const name = (p.teamName || p.participantData?.name || p.participantData?.teamName || '').toLowerCase();
       const dept = (p.participantData?.department || '').toLowerCase();
       const phone = (p.participantData?.phone || '').toLowerCase();
       if (!num.includes(term) && !name.includes(term) && !dept.includes(term) && !phone.includes(term)) {
@@ -316,6 +352,7 @@ export const CoordinatorProgramPage: React.FC = () => {
                       <th>Participant / Team</th>
                       <th>Dept & Info</th>
                       <th>Reg Date</th>
+                      <th>Marks / Score</th>
                       <th>Reg Status</th>
                       <th>Check-in Action</th>
                       <th>Actions</th>
@@ -324,9 +361,12 @@ export const CoordinatorProgramPage: React.FC = () => {
                   <tbody>
                     {filteredParticipants.map((reg) => {
                       const isUpdating = updatingId === reg.id;
-                      const pName = reg.participantData?.name || reg.participantData?.teamName || 'Unknown';
-                      const pDept = reg.participantData?.department || 'N/A';
-                      const pPhone = reg.participantData?.phone || 'N/A';
+                      const isTeam = reg.participantType === 'TEAM' || Boolean(reg.teamName);
+                      const pName = isTeam
+                        ? (reg.teamName || reg.participantData?.teamName || 'Team')
+                        : (reg.participantData?.name || reg.participantData?.fullName || reg.teamName || 'Unknown');
+                      const pDept = reg.department || reg.participantData?.department || 'N/A';
+                      const pPhone = reg.participantData?.phone || (reg as any).phone || 'N/A';
 
                       return (
                         <tr key={reg.id}>
@@ -341,7 +381,7 @@ export const CoordinatorProgramPage: React.FC = () => {
                             </div>
                             {reg.participantType === 'TEAM' && (
                               <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                                Team ({reg.participantData?.teamMembers?.length || 1} members)
+                                Team ({reg.teamMembers?.length || reg.participantData?.teamMembers?.length || 1} members)
                               </span>
                             )}
                           </td>
@@ -353,6 +393,29 @@ export const CoordinatorProgramPage: React.FC = () => {
                             <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
                               {new Date(reg.registeredAt).toLocaleDateString()}
                             </div>
+                          </td>
+                          <td>
+                            {(() => {
+                              const marks = getParticipantMarks(reg.id);
+                              if (!marks) {
+                                return <span style={{ color: 'var(--text-dim)', fontSize: '0.8125rem' }}>Pending</span>;
+                              }
+                              if (marks.status === 'DRAFT') {
+                                return <span className="badge badge-warning" style={{ fontSize: '0.75rem' }}>Drafting</span>;
+                              }
+                              return (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span className="badge badge-success" style={{ fontWeight: 800, fontSize: '0.8125rem' }}>
+                                    {marks.score} pts
+                                  </span>
+                                  {marks.rank && (
+                                    <span className="badge badge-warning" style={{ fontSize: '0.6875rem' }}>
+                                      {marks.rank}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </td>
                           <td>
                             <Badge status={reg.status} />
@@ -448,7 +511,7 @@ export const CoordinatorProgramPage: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>
-                  {selectedReg.participantData?.name || selectedReg.participantData?.teamName}
+                  {(selectedReg.participantType === 'TEAM' || selectedReg.teamName) ? (selectedReg.teamName || selectedReg.participantData?.teamName || 'Team') : (selectedReg.participantData?.name || selectedReg.participantData?.fullName || 'Participant')}
                 </h3>
                 <span style={{ fontSize: '0.8125rem', color: 'var(--text-dim)' }}>
                   Registered on {new Date(selectedReg.registeredAt).toLocaleString()}
@@ -457,34 +520,109 @@ export const CoordinatorProgramPage: React.FC = () => {
               <Badge status={selectedReg.status} />
             </div>
 
+            {/* Evaluation Score Banner */}
+            {(() => {
+              const marks = getParticipantMarks(selectedReg.id);
+              return (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '14px 18px', borderRadius: 'var(--radius-md)' }}>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 700, color: 'var(--emerald)' }}>Evaluation Marks</span>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>
+                      {marks ? `${marks.score} Points` : 'Pending Evaluation'}
+                    </div>
+                  </div>
+                  {marks?.rank && (
+                    <span className="badge badge-warning" style={{ fontSize: '0.875rem', padding: '6px 12px' }}>
+                      Podium Rank {marks.rank}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
               <div>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Department</span>
-                <div style={{ fontWeight: 600 }}>{selectedReg.participantData?.department || 'N/A'}</div>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Register / Roll #</span>
-                <div style={{ fontWeight: 600 }}>{selectedReg.participantData?.registerNumber || 'N/A'}</div>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Email</span>
-                <div style={{ fontWeight: 600 }}>{selectedReg.participantData?.email || 'N/A'}</div>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Phone</span>
-                <div style={{ fontWeight: 600 }}>{selectedReg.participantData?.phone || 'N/A'}</div>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Attendance</span>
-                <div>
-                  <Badge status={selectedReg.attendanceStatus} />
-                </div>
+                <div style={{ fontWeight: 600 }}>{selectedReg.department || selectedReg.participantData?.department || 'N/A'}</div>
               </div>
               <div>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Participation Type</span>
                 <div style={{ textTransform: 'capitalize', fontWeight: 600 }}>{selectedReg.participantType}</div>
               </div>
+              <div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Attendance Check-in</span>
+                <div>
+                  <Badge status={selectedReg.attendanceStatus} />
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Registration Status</span>
+                <div>
+                  <Badge status={selectedReg.status} />
+                </div>
+              </div>
             </div>
+
+            {/* If Individual: Show Contact Info */}
+            {selectedReg.participantType !== 'TEAM' && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '14px', borderRadius: 'var(--radius-md)' }}>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>College Register #</span>
+                  <div style={{ fontWeight: 600 }}>{selectedReg.participantData?.registerNumber || selectedReg.participantData?.rollNo || 'N/A'}</div>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Email</span>
+                  <div style={{ fontWeight: 600 }}>{selectedReg.participantData?.email || 'N/A'}</div>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Phone</span>
+                  <div style={{ fontWeight: 600 }}>{selectedReg.participantData?.phone || 'N/A'}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Team Roster: Full Table with Register Numbers */}
+            {(selectedReg.participantType === 'TEAM' || selectedReg.teamName) && (
+              <div>
+                <h4 style={{ fontSize: '0.875rem', fontWeight: 700, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Users size={15} color="var(--primary)" /> Complete Team Roster & Details
+                </h4>
+                <div className="table-responsive">
+                  <table className="table" style={{ fontSize: '0.8125rem' }}>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Member Name</th>
+                        <th>College Register No.</th>
+                        <th>Email / Contact</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {((selectedReg.teamMembers && selectedReg.teamMembers.length > 0)
+                        ? selectedReg.teamMembers
+                        : (selectedReg.participantData?.teamMembers || [])
+                      ).map((m: any, idx: number) => (
+                        <tr key={idx}>
+                          <td>{idx + 1}</td>
+                          <td>
+                            <strong>{m.name || m}</strong>
+                            {idx === 0 && <span className="badge badge-primary" style={{ marginLeft: '6px', fontSize: '0.625rem' }}>Leader</span>}
+                          </td>
+                          <td>
+                            <code style={{ color: 'var(--amber)', fontWeight: 700 }}>
+                              {m.registerNumber || m.rollNo || selectedReg.participantData?.registerNumber || 'N/A'}
+                            </code>
+                          </td>
+                          <td style={{ color: 'var(--text-dim)' }}>
+                            {m.email || m.phone || selectedReg.participantData?.email || 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* Custom fields if present */}
             {selectedReg.participantData && (
@@ -505,21 +643,7 @@ export const CoordinatorProgramPage: React.FC = () => {
               </div>
             )}
 
-            {/* Team Members List */}
-            {selectedReg.participantData?.teamMembers && (
-              <div>
-                <h4 style={{ fontSize: '0.875rem', fontWeight: 700, marginBottom: '8px', color: 'var(--text-dim)' }}>
-                  Team Members
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {selectedReg.participantData.teamMembers.map((m: any, idx: number) => (
-                    <div key={idx} style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '4px', fontSize: '0.8125rem' }}>
-                      <strong>{m.name || m}</strong> {m.registerNumber && `(${m.registerNumber})`} {m.department && `• ${m.department}`}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
               <button onClick={() => setSelectedReg(null)} className="btn btn-secondary">
